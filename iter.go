@@ -5,11 +5,7 @@ type Iterator[T any] interface {
 }
 
 type Error interface {
-    Err() error
-}
-
-type Partitioner[T any] interface {
-	Partition(int) []Iterator[T]
+	Err() error
 }
 
 func Slice[T any](s []T) *slice[T] {
@@ -31,20 +27,6 @@ func (i *slice[T]) Next() (T, bool) {
 	return i.data[i.current-1], true
 }
 
-func (i *slice[T]) Partition(max int) []Iterator[T] {
-	len := i.currentEnd - i.current + 1
-	split := float64(len) / float64(max)
-	idx := 0.0
-	parts := []Iterator[T]{}
-
-	for int(idx) < len {
-		parts = append(parts, &slice[T]{data: i.data, current: int(idx) + i.current, currentEnd: int(idx+split-1) + i.current})
-		idx += split
-	}
-
-	return parts
-}
-
 func Filter[T any, I Iterator[T]](it I, predicate func(T) (bool, error)) *filter[T, I] {
 	return &filter[T, I]{parent: it, predicate: predicate}
 }
@@ -52,7 +34,7 @@ func Filter[T any, I Iterator[T]](it I, predicate func(T) (bool, error)) *filter
 type filter[T any, I Iterator[T]] struct {
 	parent    I
 	predicate func(T) (bool, error)
-	err error
+	err       error
 }
 
 func (i *filter[T, I]) Next() (T, bool) {
@@ -74,11 +56,11 @@ func (i *filter[T, I]) iterate(next func() (T, bool)) (T, bool) {
 }
 
 func (i *filter[T, I]) Err() error {
-    if e, ok := interface{}(i.parent).(Error); ok {
-        return e.Err()
-    }
+	if e, ok := interface{}(i.parent).(Error); ok {
+		return e.Err()
+	}
 
-    return i.err
+	return i.err
 }
 
 func Map[T, U any, I Iterator[T]](parent I, mapper func(T) (U, error)) *mapIt[T, U, I] {
@@ -88,7 +70,7 @@ func Map[T, U any, I Iterator[T]](parent I, mapper func(T) (U, error)) *mapIt[T,
 type mapIt[T, U any, I Iterator[T]] struct {
 	parent I
 	mapper func(T) (U, error)
-    err error
+	err    error
 }
 
 func (i *mapIt[T, U, I]) Next() (U, bool) {
@@ -102,21 +84,21 @@ func (i *mapIt[T, U, I]) iterate(next func() (T, bool)) (U, bool) {
 		return zero, false
 	}
 
-    mapped, err := i.mapper(val)
-    if err != nil {
-        i.err = err
-        return mapped, false
-    }
+	mapped, err := i.mapper(val)
+	if err != nil {
+		i.err = err
+		return mapped, false
+	}
 
 	return mapped, true
 }
 
 func (i *mapIt[T, U, I]) Err() error {
-    if e, ok := interface{}(i.parent).(Error); ok {
-        return e.Err()
-    }
+	if e, ok := interface{}(i.parent).(Error); ok {
+		return e.Err()
+	}
 
-    return i.err
+	return i.err
 }
 
 func FlatMap[T, U any, I Iterator[T], J Iterator[U]](parent I, mapper func(T) (J, error)) *flatMap[T, U, I, J] {
@@ -125,9 +107,9 @@ func FlatMap[T, U any, I Iterator[T], J Iterator[U]](parent I, mapper func(T) (J
 
 type flatMap[T, U any, I Iterator[T], J Iterator[U]] struct {
 	parent I
-	inner *J
+	inner  *J
 	mapper func(T) (J, error)
-	err error
+	err    error
 }
 
 func (i *flatMap[T, U, I, J]) Next() (U, bool) {
@@ -158,11 +140,11 @@ func (i *flatMap[T, U, I, J]) Next() (U, bool) {
 }
 
 func (i *flatMap[T, U, I, J]) Err() error {
-    if e, ok := interface{}(i.parent).(Error); ok {
-        return e.Err()
-    }
+	if e, ok := interface{}(i.parent).(Error); ok {
+		return e.Err()
+	}
 
-    return i.err
+	return i.err
 }
 
 func ForEach[T any, I Iterator[T]](it I, consumer func(T)) error {
@@ -170,11 +152,11 @@ func ForEach[T any, I Iterator[T]](it I, consumer func(T)) error {
 		consumer(val)
 	}
 
-    if e, ok := interface{}(it).(Error); ok {
-        return e.Err()
-    }
+	if e, ok := interface{}(it).(Error); ok {
+		return e.Err()
+	}
 
-    return nil
+	return nil
 }
 
 func Reduce[T any, I Iterator[T]](it I, start T, accumulator func(T, T) T) (T, error) {
@@ -184,9 +166,9 @@ func Reduce[T any, I Iterator[T]](it I, start T, accumulator func(T, T) T) (T, e
 		result = accumulator(result, val)
 	}
 
-    if e, ok := interface{}(it).(Error); ok {
-        return result, e.Err()
-    }
+	if e, ok := interface{}(it).(Error); ok {
+		return result, e.Err()
+	}
 
 	return result, nil
 }
