@@ -28,5 +28,20 @@ func ExampleUsage() {
 		fmt.Printf("%v ", v)
 	})
 
-	// Output: n u m b e r :   3 n u m b e r :   6 n u m b e r :   9
+	res, err := Reduce(Slice([]int{1,2,3,4,5,6,7,8,9,10}), 0, func(acc, v int) int {
+		return acc + v
+	})
+
+	fmt.Println("Reduce error:", err == nil)
+	fmt.Println("Reduce sum:", res)
+
+	res, _ = Reduce(Range[int](10, 100, 5), 0, func(acc, v int) int {
+		return acc + v
+	})
+
+	fmt.Println("Reduce range:", res)
+
+	// Output: n u m b e r :   3 n u m b e r :   6 n u m b e r :   9 Reduce error: true
+	// Reduce sum: 55
+	// Reduce range: 1045
 }

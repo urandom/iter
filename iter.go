@@ -1,5 +1,9 @@
 package iter
 
+import (
+	"constraints"
+)
+
 type Iterator[T any] interface {
 	Next() (T, bool)
 }
@@ -25,6 +29,29 @@ func (i *slice[T]) Next() (T, bool) {
 	}
 	i.current++
 	return i.data[i.current-1], true
+}
+
+type Number interface {
+	constraints.Integer  | constraints.Float
+}
+
+type rng[T Number] struct {
+	end T
+	step T
+	current T
+}
+
+func Range[T Number](start, end, step T) *rng[T] {
+	return &rng[T]{end, step, start - step}
+}
+
+func (i *rng[T]) Next() (T, bool) {
+	if i.current + i.step > i.end {
+		return 0, false
+	}
+
+	i.current = i.current + i.step
+	return i.current, true
 }
 
 func Filter[T any, I Iterator[T]](it I, predicate func(T) (bool, error)) *filter[T, I] {
@@ -161,14 +188,9 @@ func ForEach[T any, I Iterator[T]](it I, consumer func(T)) error {
 
 func Reduce[T any, I Iterator[T]](it I, start T, accumulator func(T, T) T) (T, error) {
 	result := start
-
-	for val, ok := it.Next(); ok; val, ok = it.Next() {
+	err := ForEach(it, func(val T) {
 		result = accumulator(result, val)
-	}
+	})
 
-	if e, ok := interface{}(it).(Error); ok {
-		return result, e.Err()
-	}
-
-	return result, nil
+	return result, err
 }
