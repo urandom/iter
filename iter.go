@@ -194,3 +194,28 @@ func Reduce[T any, I Iterator[T]](it I, start T, accumulator func(T, T) T) (T, e
 
 	return result, err
 }
+
+type Result[T any] struct {
+	Value T
+	Err error
+}
+
+func Stream[T any, I Iterator[T]](it I, buffer int) <-chan Result[T] {
+	var res chan Result[T]
+
+	res = make(chan Result[T], buffer)
+
+	go func() {
+		err := ForEach(it, func(val T) {
+			res <- Result[T]{Value: val}
+		})
+		
+		if err != nil {
+			res <- Result[T]{Err: err}
+		}
+
+		close(res)
+	}()
+
+	return res
+}
