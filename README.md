@@ -37,7 +37,7 @@ Tangentially to the previous point, the design does not allow any changes to the
 
 ```go
 type BackwardsIterator[T any] interface {
-  Iterator[T]
+	Iterator[T]
 	Prev() (T, bool)
 }
 
